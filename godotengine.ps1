@@ -205,11 +205,11 @@ if ($download -eq 0) {
 
 		removefile "$Script_path\Godot-stable.exe"
 		Move-Item "$Script_path\unzipped\$name" "$Script_path\Godot-stable.exe"
-		
+
 		if (!(Test-Path "$Script_path\itchio_assets")) {
 			New-Item -ItemType Directory -Force -Path "$Script_path\godot_builds" | Out-Null
 		}
-		
+
 		Move-Item "$checkfile.zip" "$Script_path\godot_builds\$name.zip"
 		removefile "$Script_path\unzipped\"
 
@@ -290,6 +290,7 @@ foreach ($artist in $itchio_packages.Keys) {
 				#download asset
 				Write-Host "Download is running. Please wait, until the download ends automaticly"
 
+				removefile "$Script_path\itchio_assets\$artist\$file_name"
 				Invoke-Webrequest -Uri $url -Method Get -OutFile "$Script_path\itchio_assets\$artist\$file_name"
 
 				Write-Host "Download finished" -ForegroundColor Green
