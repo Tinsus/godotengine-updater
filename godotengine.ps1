@@ -296,8 +296,6 @@ foreach ($artist in $itchio_packages.Keys) {
 					Write-Host "`rWarte $j Sekunden..." -NoNewline
 					Start-Sleep -Seconds 1
 				}
-
-				Write-Host "`rFertig!                    "
 			} else {
 				Write-Host "$artist`: " -NoNewline
 				Write-Host "$file_name " -NoNewline -ForegroundColor White
