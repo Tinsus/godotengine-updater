@@ -77,7 +77,6 @@ function Out-IniFile($InputObject, $FilePath) {
 }
 
 #get dependencies
-
 if (-not (Get-Module -ListAvailable -Name 7Zip4PowerShell)) {
 	nls 6
 	Write-Host "Please wait a moment - we need to add some dependencies. This is needed once only."
@@ -120,6 +119,11 @@ if ($json.rate.remaining -lt 1) {
 	Start-Sleep -Seconds 2
 	exit
 }
+
+# place ._sc_ file to make godot self-contained (portable)
+
+New-Item -ItemType File -Path ./._sc_ -Force
+
 
 nls 2
 
