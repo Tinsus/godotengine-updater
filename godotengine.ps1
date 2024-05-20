@@ -314,5 +314,6 @@ Start-Process -FilePath "$Script_path\Godot-stable.exe" -WorkingDirectory "$Scri
 nls 1
 Write-Host "I have other stuff to do"
 
-Start-Sleep -Seconds 18
+Start-Sleep -Seconds 5
+Clear-Host
 exit
