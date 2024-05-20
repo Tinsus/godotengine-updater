@@ -1,2 +1,7 @@
 *.exe*
 /godotengine.ini
+/desktop.ini
+/editor_data/
+*.url
+*.zip
+/potion/
