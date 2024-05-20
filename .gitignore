@@ -2,7 +2,6 @@
 /godotengine.ini
 /desktop.ini
 /editor_data/
-*.url
-*.zip
 /potion/
 /._sc_
+/itchio_assets/

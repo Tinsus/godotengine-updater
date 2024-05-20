@@ -190,7 +190,7 @@ if ($download -eq 0) {
 		Write-Host "Download is running. Please wait, until the Bytes downloaded reach " -NoNewline
 		Write-Host $size -ForegroundColor Yellow
 
-		Invoke-WebRequest $download -OutFile "$checkfile.zip"
+		Invoke-WebRequest $download -OutFile "$Script_path\$checkfile.zip"
 
 		Write-Host "Download finished" -ForegroundColor Green
 
@@ -201,11 +201,16 @@ if ($download -eq 0) {
 		removefile "$Script_path\unzipped\"
 		newdir "$Script_path\unzipped\"
 
-		Expand-Archive -Path "$checkfile.zip" -DestinationPath "$Script_path\unzipped\" -Force
+		Expand-Archive -Path "$Script_path\$checkfile.zip" -DestinationPath "$Script_path\unzipped\" -Force
 
 		removefile "$Script_path\Godot-stable.exe"
 		Move-Item "$Script_path\unzipped\$name" "$Script_path\Godot-stable.exe"
-		Move-Item "$checkfile.zip" "$Script_path\$name.zip"
+		
+		if (!(Test-Path "$Script_path\itchio_assets")) {
+			New-Item -ItemType Directory -Force -Path "$Script_path\godot_builds" | Out-Null
+		}
+		
+		Move-Item "$checkfile.zip" "$Script_path\godot_builds\$name.zip"
 		removefile "$Script_path\unzipped\"
 
 		Write-Host "Update finished" -ForegroundColor Green
@@ -229,10 +234,10 @@ foreach ($artist in $itchio_packages.Keys) {
 
 		Invoke-Webrequest -Uri "https://$artist.itch.io/$package/download_url" -Method Post -Body @{
 			"csrf_token" = $csrf_token
-		} -OutFile "url.json"
+		} -OutFile "$Script_path\url.json"
 
-		$json = (Get-Content "url.json" -Raw) | ConvertFrom-Json
-		removefile "url.json"
+		$json = (Get-Content "$Script_path\url.json" -Raw) | ConvertFrom-Json
+		removefile "$Script_path\url.json"
 
 		$url = $json.url
 		$output = Invoke-WebRequest -Uri "$url"
@@ -255,18 +260,18 @@ foreach ($artist in $itchio_packages.Keys) {
 			$file_name = $file_names[$i].Groups[1].Value
 			$conf_key = $artist + "_" + $file_name
 
-			if (!(Test-Path "itchio_assets")) {
-				New-Item -ItemType Directory -Force -Path "itchio_assets" | Out-Null
+			if (!(Test-Path "$Script_path\itchio_assets")) {
+				New-Item -ItemType Directory -Force -Path "$Script_path\itchio_assets" | Out-Null
 			}
 
-			if (!(Test-Path "itchio_assets\$artist")) {
-				New-Item -ItemType Directory -Force -Path "itchio_assets\$artist" | Out-Null
+			if (!(Test-Path "$Script_path\itchio_assets\$artist")) {
+				New-Item -ItemType Directory -Force -Path "$Script_path\itchio_assets\$artist" | Out-Null
 			}
 
 			if (
 				($conf.itchio[$conf_key] -eq $null) -or
 				($conf.itchio[$conf_key] -ne $file_id) -or
-				(-not (Test-Path "itchio_assets\$artist\$file_name"))
+				(-not (Test-Path "$Script_path\itchio_assets\$artist\$file_name"))
 			) {
 				Write-Host "$artist`: " -NoNewline
 				Write-Host "$file_name " -NoNewline -ForegroundColor White
@@ -275,17 +280,17 @@ foreach ($artist in $itchio_packages.Keys) {
 
 				Invoke-Webrequest -Uri "https://$artist.itch.io/$package/file/$file_id`?source=game_download" -Method Post -Body @{
 					"csrf_token" = $csrf_token
-				} -WebSession $session -OutFile "url.json"
+				} -WebSession $session -OutFile "$Script_path\url.json"
 
-				$json = (Get-Content "url.json" -Raw) | ConvertFrom-Json
-				removefile "url.json"
+				$json = (Get-Content "$Script_path\url.json" -Raw) | ConvertFrom-Json
+				removefile "$Script_path\url.json"
 
 				$url = $json.url
 
 				#download asset
 				Write-Host "Download is running. Please wait, until the download ends automaticly"
 
-				Invoke-Webrequest -Uri $url -Method Get -OutFile "itchio_assets\$artist\$file_name"
+				Invoke-Webrequest -Uri $url -Method Get -OutFile "$Script_path\itchio_assets\$artist\$file_name"
 
 				Write-Host "Download finished" -ForegroundColor Green
 
