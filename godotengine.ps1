@@ -3,6 +3,11 @@
 $Script_path = Split-Path $MyInvocation.Mycommand.Path -Parent
 $checkfile = "$Script_path\checkfile"
 
+# genial assets from itch.io
+$itchio_packages = @{
+	"pixel-boy" = @("ninja-adventure-asset-pack")
+}
+
 function removefile($path) {
 	Remove-Item "$path" -recurse -force -ErrorAction SilentlyContinue
 }
@@ -76,44 +81,6 @@ function Out-IniFile($InputObject, $FilePath) {
     $newlines | Out-File $Filepath
 }
 
-#---------------------------------------------------------------
-<#
-$packages = @{
-	"pixel-boy" = @("ninja-adventure-asset-pack")
-}
-
-foreach ($artist in $packages.Keys) {
-	foreach ($package in $packages[$artist]) {
-		$csrf_token = Invoke-WebRequest -Uri "https://$artist.itch.io/$package/purchase"
-		$csrf_token = $csrf_token.ParsedHtml.getElementsByTagName('meta') | Where-Object {$_.name -eq 'csrf_token'} | Select-Object -First 1
-		$csrf_token = [regex]::Match($csrf_token.outerHTML, 'value="([^"]*)"')
-		$csrf_token = $csrf_token.Groups[1].Value
-
-		Invoke-Webrequest -Uri "https://$artist.itch.io/$package/download_url" -Method Post -Body @{
-			"csrf_token" = $csrf_token
-		} -OutFile "url.json"
-
-		$json = (Get-Content "url.json" -Raw) | ConvertFrom-Json
-		removefile "url.json"
-
-		$url = $json.url
-
-		Write-Host $url
-
-		$output = Invoke-WebRequest -Uri "$url"
-
-		$file_ids = $output | Select-String -Pattern 'data-upload_id="(\d+)"' -AllMatches | % { $_.Matches }
-
-		foreach ($match in $file_ids) {
-			$file_id = $match.Groups[1].Value
-
-			Write-Host $file_id
-		}
-	}
-}
-#>
-#---------------------------------------------------------------
-
 #get dependencies
 if (-not (Get-Module -ListAvailable -Name 7Zip4PowerShell)) {
 	nls 6
@@ -141,6 +108,10 @@ if (Test-Path "$Script_path\godotengine.ini") {
 	$conf.version = @{}
 }
 
+if ($conf.itchio -eq $null) {
+	$conf.itchio = @{}
+}
+
 # check githubs API restrictions and waits until it's possible again
 Invoke-WebRequest "https://api.github.com/rate_limit" -OutFile "$Script_path\github.json"
 $json = (Get-Content "$Script_path\github.json" -Raw) | ConvertFrom-Json
@@ -161,7 +132,6 @@ if ($json.rate.remaining -lt 1) {
 # place ._sc_ file to make godot self-contained (portable)
 
 New-Item -ItemType File -Path ./._sc_ -Force
-
 
 nls 2
 
@@ -246,6 +216,96 @@ if ($download -eq 0) {
 		Write-Host "Godot " -NoNewline -ForegroundColor White
 		Write-Host "is " -NoNewline
 		Write-Host "up to date" -ForegroundColor White
+	}
+}
+
+#getting all the nice itch.io stuff
+foreach ($artist in $itchio_packages.Keys) {
+	foreach ($package in $itchio_packages[$artist]) {
+		$csrf_token = Invoke-WebRequest -Uri "https://$artist.itch.io/$package/purchase"
+		$csrf_token = $csrf_token.ParsedHtml.getElementsByTagName('meta') | Where-Object {$_.name -eq 'csrf_token'} | Select-Object -First 1
+		$csrf_token = [regex]::Match($csrf_token.outerHTML, 'value="([^"]*)"')
+		$csrf_token = $csrf_token.Groups[1].Value
+
+		Invoke-Webrequest -Uri "https://$artist.itch.io/$package/download_url" -Method Post -Body @{
+			"csrf_token" = $csrf_token
+		} -OutFile "url.json"
+
+		$json = (Get-Content "url.json" -Raw) | ConvertFrom-Json
+		removefile "url.json"
+
+		$url = $json.url
+		$output = Invoke-WebRequest -Uri "$url"
+		$download_key = $url.Replace("https://$artist.itch.io/$package/download/", "")
+
+		$csrf_token = [regex]::match($output, '<meta name="csrf_token" value="(.*)" />')
+		$csrf_token = $csrf_token.Groups[1].Value
+
+		$file_ids	= $output | Select-String -Pattern 'data-upload_id="(\d+)"'					-AllMatches | % { $_.Matches }
+		$file_names	= $output | Select-String -Pattern '<strong title="(.*?)" class="name">'	-AllMatches | % { $_.Matches }
+
+		$session = New-Object -TypeName Microsoft.PowerShell.Commands.WebRequestSession
+		$cookie = New-Object System.Net.Cookie("itchio_token", $csrf_token, "/", ".itch.io")
+		$session.Cookies.Add($cookie)
+		$cookie = New-Object System.Net.Cookie("itchio", $download_key, "/", ".itch.io")
+		$session.Cookies.Add($cookie)
+
+		for ($i=0; $i -lt $file_ids.Count; $i++) {
+			$file_id = $file_ids[$i].Groups[1].Value
+			$file_name = $file_names[$i].Groups[1].Value
+			$conf_key = $artist + "_" + $file_name
+
+			if (!(Test-Path "itchio_assets")) {
+				New-Item -ItemType Directory -Force -Path "itchio_assets" | Out-Null
+			}
+
+			if (!(Test-Path "itchio_assets\$artist")) {
+				New-Item -ItemType Directory -Force -Path "itchio_assets\$artist" | Out-Null
+			}
+
+			if (
+				($conf.itchio[$conf_key] -eq $null) -or
+				($conf.itchio[$conf_key] -ne $file_id) -or
+				(-not (Test-Path "itchio_assets\$artist\$file_name"))
+			) {
+				Write-Host "$artist`: " -NoNewline
+				Write-Host "$file_name " -NoNewline -ForegroundColor White
+				Write-Host "gets an " -NoNewline
+				Write-Host "update" -ForegroundColor Green
+
+				Invoke-Webrequest -Uri "https://$artist.itch.io/$package/file/$file_id`?source=game_download" -Method Post -Body @{
+					"csrf_token" = $csrf_token
+				} -WebSession $session -OutFile "url.json"
+
+				$json = (Get-Content "url.json" -Raw) | ConvertFrom-Json
+				removefile "url.json"
+
+				$url = $json.url
+
+				#download asset
+				nls 1
+				Write-Host "Download is running. Please wait, until the download ends automaticly"
+
+				Invoke-Webrequest -Uri $url -Method Get -OutFile "itchio_assets\$artist\$file_name"
+
+				Write-Host "Download finished" -ForegroundColor Green
+
+				$conf.itchio[$conf_key] = $file_id
+				Out-IniFile -InputObject $conf -FilePath "$Script_path\godotengine.ini"
+
+				for ($i=30; $i -le 0; $i--) {
+					Write-Host "`rWarte $i Sekunden..." -NoNewline
+					Start-Sleep -Seconds 1
+				}
+
+				Write-Host "`rFertig!                    "
+			} else {
+				Write-Host "$artist`: " -NoNewline
+				Write-Host "$file_name " -NoNewline -ForegroundColor White
+				Write-Host "is " -NoNewline
+				Write-Host "up to date" -ForegroundColor White
+			}
+		}
 	}
 }
 
