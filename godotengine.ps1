@@ -283,7 +283,6 @@ foreach ($artist in $itchio_packages.Keys) {
 				$url = $json.url
 
 				#download asset
-				nls 1
 				Write-Host "Download is running. Please wait, until the download ends automaticly"
 
 				Invoke-Webrequest -Uri $url -Method Get -OutFile "itchio_assets\$artist\$file_name"
@@ -293,8 +292,8 @@ foreach ($artist in $itchio_packages.Keys) {
 				$conf.itchio[$conf_key] = $file_id
 				Out-IniFile -InputObject $conf -FilePath "$Script_path\godotengine.ini"
 
-				for ($i=30; $i -le 0; $i--) {
-					Write-Host "`rWarte $i Sekunden..." -NoNewline
+				for ($j=30; $j -le 0; $j--) {
+					Write-Host "`rWarte $j Sekunden..." -NoNewline
 					Start-Sleep -Seconds 1
 				}
 
