@@ -131,7 +131,7 @@ if ($json.rate.remaining -lt 1) {
 
 # place ._sc_ file to make godot self-contained (portable)
 
-New-Item -ItemType File -Path ./._sc_ -Force
+New-Item -ItemType File -Path ./._sc_ -Force | Out-Null
 
 nls 2
 
