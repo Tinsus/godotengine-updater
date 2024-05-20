@@ -76,6 +76,44 @@ function Out-IniFile($InputObject, $FilePath) {
     $newlines | Out-File $Filepath
 }
 
+#---------------------------------------------------------------
+<#
+$packages = @{
+	"pixel-boy" = @("ninja-adventure-asset-pack")
+}
+
+foreach ($artist in $packages.Keys) {
+	foreach ($package in $packages[$artist]) {
+		$csrf_token = Invoke-WebRequest -Uri "https://$artist.itch.io/$package/purchase"
+		$csrf_token = $csrf_token.ParsedHtml.getElementsByTagName('meta') | Where-Object {$_.name -eq 'csrf_token'} | Select-Object -First 1
+		$csrf_token = [regex]::Match($csrf_token.outerHTML, 'value="([^"]*)"')
+		$csrf_token = $csrf_token.Groups[1].Value
+
+		Invoke-Webrequest -Uri "https://$artist.itch.io/$package/download_url" -Method Post -Body @{
+			"csrf_token" = $csrf_token
+		} -OutFile "url.json"
+
+		$json = (Get-Content "url.json" -Raw) | ConvertFrom-Json
+		removefile "url.json"
+
+		$url = $json.url
+
+		Write-Host $url
+
+		$output = Invoke-WebRequest -Uri "$url"
+
+		$file_ids = $output | Select-String -Pattern 'data-upload_id="(\d+)"' -AllMatches | % { $_.Matches }
+
+		foreach ($match in $file_ids) {
+			$file_id = $match.Groups[1].Value
+
+			Write-Host $file_id
+		}
+	}
+}
+#>
+#---------------------------------------------------------------
+
 #get dependencies
 if (-not (Get-Module -ListAvailable -Name 7Zip4PowerShell)) {
 	nls 6
