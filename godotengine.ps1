@@ -91,7 +91,7 @@ if (-not (Get-Module -ListAvailable -Name 7Zip4PowerShell)) {
 		Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
 	}
 
-    Install-Module -Name 7Zip4PowerShell -Scope CurrentUser -Force
+	Install-Module -Name 7Zip4PowerShell -Scope CurrentUser -Force
 }
 
 #some "welcoming" text
@@ -130,7 +130,6 @@ if ($json.rate.remaining -lt 1) {
 }
 
 # place ._sc_ file to make godot self-contained (portable)
-
 New-Item -ItemType File -Path ./._sc_ -Force | Out-Null
 
 nls 2
@@ -227,9 +226,8 @@ if ($download -eq 0) {
 #getting all the nice itch.io stuff
 foreach ($artist in $itchio_packages.Keys) {
 	foreach ($package in $itchio_packages[$artist]) {
-		$csrf_token = Invoke-WebRequest -Uri "https://$artist.itch.io/$package/purchase"
-		$csrf_token = $csrf_token.ParsedHtml.getElementsByTagName('meta') | Where-Object {$_.name -eq 'csrf_token'} | Select-Object -First 1
-		$csrf_token = [regex]::Match($csrf_token.outerHTML, 'value="([^"]*)"')
+		$csrf_token = Invoke-WebRequest -Uri "https://$artist.itch.io/$package"
+		$csrf_token = [regex]::match($output, '<meta name="csrf_token" value="(.*)" />')
 		$csrf_token = $csrf_token.Groups[1].Value
 
 		Invoke-Webrequest -Uri "https://$artist.itch.io/$package/download_url" -Method Post -Body @{
@@ -248,6 +246,10 @@ foreach ($artist in $itchio_packages.Keys) {
 
 		$file_ids	= $output | Select-String -Pattern 'data-upload_id="(\d+)"'					-AllMatches | % { $_.Matches }
 		$file_names	= $output | Select-String -Pattern '<strong title="(.*?)" class="name">'	-AllMatches | % { $_.Matches }
+
+        if ($file_names -eq $null) {
+			$file_names	= $output | Select-String -Pattern '<strong class="name" title="(.*?)">'	-AllMatches | % { $_.Matches }
+		}
 
 		$session = New-Object -TypeName Microsoft.PowerShell.Commands.WebRequestSession
 		$cookie = New-Object System.Net.Cookie("itchio_token", $csrf_token, "/", ".itch.io")
