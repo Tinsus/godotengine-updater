@@ -6,6 +6,7 @@ $checkfile = "$Script_path\checkfile"
 # genial assets from itch.io
 $itchio_packages = @{
 	"pixel-boy" = @("ninja-adventure-asset-pack")
+	"flippurgatory" = @("animated-potion-assets-pack-free")
 }
 
 function removefile($path) {
