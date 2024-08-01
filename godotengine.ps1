@@ -8,7 +8,7 @@ $itchio_packages = @{
 	"pixel-boy"	= @("ninja-adventure-asset-pack")
 	"flippurgatory"	= @("animated-potion-assets-pack-free")
 	"ggbot"		= @("kurland-font")
-	"normiebuster"	= @("pixel-ui-buttons")
+	"crusenho"	= @("icons-essential-pack-free-icons")
 }
 
 function removefile($path) {
