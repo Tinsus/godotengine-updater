@@ -192,7 +192,7 @@ if ($download -eq 0) {
 		Write-Host "Download is running. Please wait, until the Bytes downloaded reach " -NoNewline
 		Write-Host $size -ForegroundColor Yellow
 
-		Invoke-WebRequest $download -OutFile "$Script_path\$checkfile.zip"
+		Invoke-WebRequest $download -OutFile "$checkfile.zip"
 
 		Write-Host "Download finished" -ForegroundColor Green
 
@@ -203,7 +203,7 @@ if ($download -eq 0) {
 		removefile "$Script_path\unzipped\"
 		newdir "$Script_path\unzipped\"
 
-		Expand-Archive -Path "$Script_path\$checkfile.zip" -DestinationPath "$Script_path\unzipped\" -Force
+		Expand-Archive -Path "$checkfile.zip" -DestinationPath "$Script_path\unzipped\" -Force
 
 		removefile "$Script_path\Godot-stable.exe"
 		Move-Item "$Script_path\unzipped\$name" "$Script_path\Godot-stable.exe"
